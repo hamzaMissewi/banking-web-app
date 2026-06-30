@@ -10,7 +10,7 @@
         "projectUniqueName": "F:\\projects\\opencode\\online-banking-web-app\\backend\\backend.csproj",
         "projectName": "backend",
         "projectPath": "F:\\projects\\opencode\\online-banking-web-app\\backend\\backend.csproj",
-        "packagesPath": "J:\\nuget-packages",
+        "packagesPath": "C:\\Users\\hamza\\.nuget\\packages\\",
         "outputPath": "F:\\projects\\opencode\\online-banking-web-app\\backend\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
@@ -61,6 +61,10 @@
             "Microsoft.EntityFrameworkCore.Sqlite": {
               "target": "Package",
               "version": "[10.0.9, )"
+            },
+            "SQLitePCLRaw.bundle_e_sqlite3": {
+              "target": "Package",
+              "version": "[3.0.3, )"
             }
           },
           "imports": [

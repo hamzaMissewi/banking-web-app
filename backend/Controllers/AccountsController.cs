@@ -18,8 +18,11 @@ public class AccountsController : ControllerBase
         _accountService = accountService;
     }
 
-    private int GetUserId() =>
-        int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+    private int GetUserId()
+    {
+        var value = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        return value != null ? int.Parse(value) : throw new UnauthorizedAccessException("User not authenticated");
+    }
 
     [HttpGet]
     public async Task<IActionResult> GetAccounts()

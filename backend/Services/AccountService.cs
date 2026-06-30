@@ -33,7 +33,7 @@ public class AccountService
     {
         var account = new Account
         {
-            AccountNumber = GenerateAccountNumber(),
+            AccountNumber = await GenerateAccountNumber(),
             AccountType = request.AccountType,
             Balance = 0,
             UserId = userId
@@ -139,10 +139,11 @@ public class AccountService
             throw new InvalidOperationException("Insufficient funds");
 
         var sourceBalanceBefore = sourceAccount.Balance;
+        var targetBalanceBefore = targetAccount.Balance;
         sourceAccount.Balance -= request.Amount;
         targetAccount.Balance += request.Amount;
 
-        var transaction = new Transaction
+        var sourceTransaction = new Transaction
         {
             Type = TransactionType.Transfer,
             Amount = request.Amount,
@@ -153,10 +154,21 @@ public class AccountService
             TargetAccountId = targetAccount.Id
         };
 
-        _context.Transactions.Add(transaction);
+        var targetTransaction = new Transaction
+        {
+            Type = TransactionType.Transfer,
+            Amount = request.Amount,
+            BalanceBefore = targetBalanceBefore,
+            BalanceAfter = targetAccount.Balance,
+            Description = request.Description,
+            AccountId = targetAccount.Id,
+            TargetAccountId = sourceAccount.Id
+        };
+
+        _context.Transactions.AddRange(sourceTransaction, targetTransaction);
         await _context.SaveChangesAsync();
 
-        return MapTransaction(transaction);
+        return MapTransaction(sourceTransaction);
     }
 
     public async Task<List<TransactionResponse>> GetTransactions(int accountId, int userId)
@@ -197,12 +209,18 @@ public class AccountService
         };
     }
 
-    private static string GenerateAccountNumber()
+    private async Task<string> GenerateAccountNumber()
     {
         var random = Random.Shared;
         var digits = new char[10];
-        for (int i = 0; i < 10; i++)
-            digits[i] = (char)('0' + random.Next(0, 10));
-        return new string(digits);
+        for (int attempt = 0; attempt < 10; attempt++)
+        {
+            for (int i = 0; i < 10; i++)
+                digits[i] = (char)('0' + random.Next(0, 10));
+            var number = new string(digits);
+            if (!await _context.Accounts.AnyAsync(a => a.AccountNumber == number))
+                return number;
+        }
+        throw new InvalidOperationException("Failed to generate a unique account number");
     }
 }

@@ -1,6 +1,72 @@
 @backend_HostAddress = http://localhost:5070
 
-GET {{backend_HostAddress}}/weatherforecast/
-Accept: application/json
+### Register a new user
+POST {{backend_HostAddress}}/api/auth/register
+Content-Type: application/json
 
-###
+{
+  "username": "testuser",
+  "email": "test@example.com",
+  "password": "password123"
+}
+
+### Login
+POST {{backend_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "testuser",
+  "password": "password123"
+}
+
+### Get all accounts (replace TOKEN after login)
+GET {{backend_HostAddress}}/api/accounts
+Authorization: Bearer TOKEN
+
+### Create a new account
+POST {{backend_HostAddress}}/api/accounts
+Content-Type: application/json
+Authorization: Bearer TOKEN
+
+{
+  "accountType": "Savings"
+}
+
+### Get account by id (replace 1)
+GET {{backend_HostAddress}}/api/accounts/1
+Authorization: Bearer TOKEN
+
+### Deposit
+POST {{backend_HostAddress}}/api/accounts/1/deposit
+Content-Type: application/json
+Authorization: Bearer TOKEN
+
+{
+  "amount": 1000.00,
+  "description": "Initial deposit"
+}
+
+### Withdraw
+POST {{backend_HostAddress}}/api/accounts/1/withdraw
+Content-Type: application/json
+Authorization: Bearer TOKEN
+
+{
+  "amount": 100.00,
+  "description": "ATM withdrawal"
+}
+
+### Transfer to another account (replace 1234567890)
+POST {{backend_HostAddress}}/api/accounts/1/transfer
+Content-Type: application/json
+Authorization: Bearer TOKEN
+
+{
+  "targetAccountNumber": "1234567890",
+  "amount": 50.00,
+  "description": "Payment"
+}
+
+### Get transactions for account
+GET {{backend_HostAddress}}/api/accounts/1/transactions
+Authorization: Bearer TOKEN

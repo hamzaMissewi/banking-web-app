@@ -36,14 +36,13 @@ public class AuthService
         };
 
         _context.Users.Add(user);
-        await _context.SaveChangesAsync();
 
         var account = new Account
         {
-            AccountNumber = GenerateAccountNumber(),
+            AccountNumber = await GenerateAccountNumber(),
             AccountType = "Checking",
             Balance = 0,
-            UserId = user.Id
+            User = user
         };
 
         _context.Accounts.Add(account);
@@ -98,12 +97,18 @@ public class AuthService
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
-    private static string GenerateAccountNumber()
+    private async Task<string> GenerateAccountNumber()
     {
         var random = Random.Shared;
         var digits = new char[10];
-        for (int i = 0; i < 10; i++)
-            digits[i] = (char)('0' + random.Next(0, 10));
-        return new string(digits);
+        for (int attempt = 0; attempt < 10; attempt++)
+        {
+            for (int i = 0; i < 10; i++)
+                digits[i] = (char)('0' + random.Next(0, 10));
+            var number = new string(digits);
+            if (!await _context.Accounts.AnyAsync(a => a.AccountNumber == number))
+                return number;
+        }
+        throw new InvalidOperationException("Failed to generate a unique account number");
     }
 }
