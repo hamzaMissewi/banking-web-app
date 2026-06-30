@@ -39,6 +39,20 @@ public class AdminController : ControllerBase
         return Ok(user);
     }
 
+    [HttpPut("users/{id}/status")]
+    public async Task<IActionResult> ToggleUserStatus(int id, ToggleUserStatusRequest request)
+    {
+        try
+        {
+            var user = await _adminService.ToggleUserStatus(id, request);
+            return Ok(user);
+        }
+        catch (InvalidOperationException e)
+        {
+            return NotFound(new { message = e.Message });
+        }
+    }
+
     [HttpPost("users/{id}/promote")]
     public async Task<IActionResult> PromoteUser(int id)
     {
@@ -67,6 +81,20 @@ public class AdminController : ControllerBase
         {
             var account = await _adminService.UpdateAccountStatus(id, request);
             return Ok(account);
+        }
+        catch (InvalidOperationException e)
+        {
+            return NotFound(new { message = e.Message });
+        }
+    }
+
+    [HttpGet("accounts/{id}/transactions")]
+    public async Task<IActionResult> GetAccountTransactions(int id)
+    {
+        try
+        {
+            var transactions = await _adminService.GetAccountTransactions(id);
+            return Ok(transactions);
         }
         catch (InvalidOperationException e)
         {

@@ -46,6 +46,34 @@ public class AccountsController : ControllerBase
         return Ok(account);
     }
 
+    [HttpPut("{id}")]
+    public async Task<IActionResult> UpdateAccount(int id, UpdateAccountRequest request)
+    {
+        try
+        {
+            var account = await _accountService.UpdateAccount(id, GetUserId(), request);
+            return Ok(account);
+        }
+        catch (InvalidOperationException e)
+        {
+            return NotFound(new { message = e.Message });
+        }
+    }
+
+    [HttpPost("{id}/close")]
+    public async Task<IActionResult> CloseAccount(int id)
+    {
+        try
+        {
+            var account = await _accountService.CloseAccount(id, GetUserId());
+            return Ok(account);
+        }
+        catch (InvalidOperationException e)
+        {
+            return BadRequest(new { message = e.Message });
+        }
+    }
+
     [HttpPost("{id}/deposit")]
     public async Task<IActionResult> Deposit(int id, DepositRequest request)
     {

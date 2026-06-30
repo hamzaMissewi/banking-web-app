@@ -48,6 +48,11 @@ public class TransferRequest
     public string Description { get; set; } = "Transfer";
 }
 
+public class UpdateAccountRequest
+{
+    public string AccountType { get; set; } = "Checking";
+}
+
 public class TransactionResponse
 {
     public int Id { get; set; }

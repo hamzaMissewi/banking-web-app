@@ -153,4 +153,73 @@ public class AdminServiceTests
         Assert.Single(transactions);
         Assert.Equal("Deposit", transactions[0].Type);
     }
+
+    [Fact]
+    public async Task ToggleUserStatus_DeactivatesUser()
+    {
+        using var context = TestHelper.CreateDbContext();
+        var user = await TestHelper.CreateTestUser(context, "testuser");
+
+        var service = new AdminService(context);
+        var result = await service.ToggleUserStatus(user.Id, new ToggleUserStatusRequest
+        {
+            IsActive = false
+        });
+
+        Assert.False(result.IsActive);
+    }
+
+    [Fact]
+    public async Task ToggleUserStatus_ReactivatesUser()
+    {
+        using var context = TestHelper.CreateDbContext();
+        var user = await TestHelper.CreateTestUser(context, "testuser");
+        user.IsActive = false;
+        await context.SaveChangesAsync();
+
+        var service = new AdminService(context);
+        var result = await service.ToggleUserStatus(user.Id, new ToggleUserStatusRequest
+        {
+            IsActive = true
+        });
+
+        Assert.True(result.IsActive);
+    }
+
+    [Fact]
+    public async Task ToggleUserStatus_NotFound_Throws()
+    {
+        using var context = TestHelper.CreateDbContext();
+        var service = new AdminService(context);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.ToggleUserStatus(999, new ToggleUserStatusRequest { IsActive = false }));
+    }
+
+    [Fact]
+    public async Task GetAccountTransactions_ReturnsAccountTransactions()
+    {
+        using var context = TestHelper.CreateDbContext();
+        var user = await TestHelper.CreateTestUser(context);
+        var account = await TestHelper.CreateTestAccount(context, user.Id);
+
+        var accountService = new AccountService(context);
+        await accountService.Deposit(account.Id, user.Id, new DepositRequest { Amount = 100 });
+        await accountService.Withdraw(account.Id, user.Id, new WithdrawRequest { Amount = 50 });
+
+        var adminService = new AdminService(context);
+        var transactions = await adminService.GetAccountTransactions(account.Id);
+
+        Assert.Equal(2, transactions.Count);
+    }
+
+    [Fact]
+    public async Task GetAccountTransactions_NotFound_Throws()
+    {
+        using var context = TestHelper.CreateDbContext();
+        var service = new AdminService(context);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.GetAccountTransactions(999));
+    }
 }

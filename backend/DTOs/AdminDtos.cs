@@ -24,3 +24,8 @@ public class UpdateAccountStatusRequest
 {
     public bool IsActive { get; set; }
 }
+
+public class ToggleUserStatusRequest
+{
+    public bool IsActive { get; set; }
+}

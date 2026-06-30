@@ -260,4 +260,142 @@ public class AccountServiceTests
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             service.Deposit(account.Id, user2.Id, request));
     }
+
+    [Fact]
+    public async Task CloseAccount_MarksInactive()
+    {
+        using var context = TestHelper.CreateDbContext();
+        var user = await TestHelper.CreateTestUser(context);
+        var account = await TestHelper.CreateTestAccount(context, user.Id);
+        account.Balance = 0;
+        await context.SaveChangesAsync();
+
+        var service = new AccountService(context);
+        var result = await service.CloseAccount(account.Id, user.Id);
+
+        Assert.False(result.IsActive);
+    }
+
+    [Fact]
+    public async Task CloseAccount_NonZeroBalance_Throws()
+    {
+        using var context = TestHelper.CreateDbContext();
+        var user = await TestHelper.CreateTestUser(context);
+        var account = await TestHelper.CreateTestAccount(context, user.Id);
+
+        var service = new AccountService(context);
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.CloseAccount(account.Id, user.Id));
+    }
+
+    [Fact]
+    public async Task CloseAccount_AlreadyClosed_Throws()
+    {
+        using var context = TestHelper.CreateDbContext();
+        var user = await TestHelper.CreateTestUser(context);
+        var account = await TestHelper.CreateTestAccount(context, user.Id);
+        account.Balance = 0;
+        account.IsActive = false;
+        await context.SaveChangesAsync();
+
+        var service = new AccountService(context);
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.CloseAccount(account.Id, user.Id));
+    }
+
+    [Fact]
+    public async Task UpdateAccount_ChangesType()
+    {
+        using var context = TestHelper.CreateDbContext();
+        var user = await TestHelper.CreateTestUser(context);
+        var account = await TestHelper.CreateTestAccount(context, user.Id);
+
+        var service = new AccountService(context);
+        var result = await service.UpdateAccount(account.Id, user.Id, new UpdateAccountRequest
+        {
+            AccountType = "Savings"
+        });
+
+        Assert.Equal("Savings", result.AccountType);
+    }
+
+    [Fact]
+    public async Task Deposit_ClosedAccount_Throws()
+    {
+        using var context = TestHelper.CreateDbContext();
+        var user = await TestHelper.CreateTestUser(context);
+        var account = await TestHelper.CreateTestAccount(context, user.Id);
+        account.IsActive = false;
+        await context.SaveChangesAsync();
+
+        var service = new AccountService(context);
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.Deposit(account.Id, user.Id, new DepositRequest { Amount = 100 }));
+    }
+
+    [Fact]
+    public async Task Withdraw_ClosedAccount_Throws()
+    {
+        using var context = TestHelper.CreateDbContext();
+        var user = await TestHelper.CreateTestUser(context);
+        var account = await TestHelper.CreateTestAccount(context, user.Id);
+        account.IsActive = false;
+        await context.SaveChangesAsync();
+
+        var service = new AccountService(context);
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.Withdraw(account.Id, user.Id, new WithdrawRequest { Amount = 100 }));
+    }
+
+    [Fact]
+    public async Task Transfer_ClosedSource_Throws()
+    {
+        using var context = TestHelper.CreateDbContext();
+        var user = await TestHelper.CreateTestUser(context);
+        var source = await TestHelper.CreateTestAccount(context, user.Id);
+        source.IsActive = false;
+        var target = new Account
+        {
+            AccountNumber = "0987654321",
+            AccountType = AccountType.Checking,
+            Balance = 100,
+            UserId = user.Id
+        };
+        context.Accounts.Add(target);
+        await context.SaveChangesAsync();
+
+        var service = new AccountService(context);
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.Transfer(source.Id, user.Id, new TransferRequest
+            {
+                TargetAccountNumber = "0987654321",
+                Amount = 50
+            }));
+    }
+
+    [Fact]
+    public async Task Transfer_ClosedTarget_Throws()
+    {
+        using var context = TestHelper.CreateDbContext();
+        var user = await TestHelper.CreateTestUser(context);
+        var source = await TestHelper.CreateTestAccount(context, user.Id);
+        var target = new Account
+        {
+            AccountNumber = "0987654321",
+            AccountType = AccountType.Checking,
+            Balance = 100,
+            UserId = user.Id,
+            IsActive = false
+        };
+        context.Accounts.Add(target);
+        await context.SaveChangesAsync();
+
+        var service = new AccountService(context);
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.Transfer(source.Id, user.Id, new TransferRequest
+            {
+                TargetAccountNumber = "0987654321",
+                Amount = 50
+            }));
+    }
 }

@@ -48,11 +48,46 @@ public class AccountService
         return account == null ? null : MapAccount(account);
     }
 
+    public async Task<AccountResponse> UpdateAccount(int accountId, int userId, UpdateAccountRequest request)
+    {
+        var account = await _context.Accounts
+            .FirstOrDefaultAsync(a => a.Id == accountId && a.UserId == userId)
+            ?? throw new InvalidOperationException("Account not found");
+
+        account.AccountType = Enum.TryParse<Models.AccountType>(request.AccountType, true, out var parsed)
+            ? parsed
+            : Models.AccountType.Checking;
+
+        await _context.SaveChangesAsync();
+        return MapAccount(account);
+    }
+
+    public async Task<AccountResponse> CloseAccount(int accountId, int userId)
+    {
+        var account = await _context.Accounts
+            .FirstOrDefaultAsync(a => a.Id == accountId && a.UserId == userId)
+            ?? throw new InvalidOperationException("Account not found");
+
+        if (!account.IsActive)
+            throw new InvalidOperationException("Account is already closed");
+
+        if (account.Balance != 0)
+            throw new InvalidOperationException("Cannot close account with non-zero balance");
+
+        account.IsActive = false;
+        await _context.SaveChangesAsync();
+
+        return MapAccount(account);
+    }
+
     public async Task<TransactionResponse> Deposit(int accountId, int userId, DepositRequest request)
     {
         var account = await _context.Accounts
             .FirstOrDefaultAsync(a => a.Id == accountId && a.UserId == userId)
             ?? throw new InvalidOperationException("Account not found");
+
+        if (!account.IsActive)
+            throw new InvalidOperationException("Cannot deposit into a closed account");
 
         var balanceBefore = account.Balance;
         account.Balance += request.Amount;
@@ -78,6 +113,9 @@ public class AccountService
         var account = await _context.Accounts
             .FirstOrDefaultAsync(a => a.Id == accountId && a.UserId == userId)
             ?? throw new InvalidOperationException("Account not found");
+
+        if (!account.IsActive)
+            throw new InvalidOperationException("Cannot withdraw from a closed account");
 
         if (account.Balance < request.Amount)
             throw new InvalidOperationException("Insufficient funds");
@@ -107,12 +145,18 @@ public class AccountService
             .FirstOrDefaultAsync(a => a.Id == accountId && a.UserId == userId)
             ?? throw new InvalidOperationException("Source account not found");
 
+        if (!sourceAccount.IsActive)
+            throw new InvalidOperationException("Cannot transfer from a closed account");
+
         if (sourceAccount.AccountNumber == request.TargetAccountNumber)
             throw new InvalidOperationException("Cannot transfer to the same account");
 
         var targetAccount = await _context.Accounts
             .FirstOrDefaultAsync(a => a.AccountNumber == request.TargetAccountNumber)
             ?? throw new InvalidOperationException("Target account not found");
+
+        if (!targetAccount.IsActive)
+            throw new InvalidOperationException("Cannot transfer to a closed account");
 
         if (sourceAccount.Balance < request.Amount)
             throw new InvalidOperationException("Insufficient funds");
