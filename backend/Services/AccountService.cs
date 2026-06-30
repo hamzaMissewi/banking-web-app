@@ -16,17 +16,11 @@ public class AccountService
 
     public async Task<List<AccountResponse>> GetAccounts(int userId)
     {
-        return await _context.Accounts
+        var accounts = await _context.Accounts
             .Where(a => a.UserId == userId)
-            .Select(a => new AccountResponse
-            {
-                Id = a.Id,
-                AccountNumber = a.AccountNumber,
-                AccountType = a.AccountType,
-                Balance = a.Balance,
-                CreatedAt = a.CreatedAt
-            })
             .ToListAsync();
+
+        return accounts.Select(MapAccount).ToList();
     }
 
     public async Task<AccountResponse> CreateAccount(int userId, CreateAccountRequest request)
@@ -34,22 +28,16 @@ public class AccountService
         var account = new Account
         {
             AccountNumber = await GenerateAccountNumber(),
-            AccountType = request.AccountType,
-            Balance = 0,
+            AccountType = Enum.TryParse<Models.AccountType>(request.AccountType, true, out var parsed)
+                ? parsed
+                : Models.AccountType.Checking,
             UserId = userId
         };
 
         _context.Accounts.Add(account);
         await _context.SaveChangesAsync();
 
-        return new AccountResponse
-        {
-            Id = account.Id,
-            AccountNumber = account.AccountNumber,
-            AccountType = account.AccountType,
-            Balance = account.Balance,
-            CreatedAt = account.CreatedAt
-        };
+        return MapAccount(account);
     }
 
     public async Task<AccountResponse?> GetAccount(int accountId, int userId)
@@ -57,16 +45,7 @@ public class AccountService
         var account = await _context.Accounts
             .FirstOrDefaultAsync(a => a.Id == accountId && a.UserId == userId);
 
-        if (account == null) return null;
-
-        return new AccountResponse
-        {
-            Id = account.Id,
-            AccountNumber = account.AccountNumber,
-            AccountType = account.AccountType,
-            Balance = account.Balance,
-            CreatedAt = account.CreatedAt
-        };
+        return account == null ? null : MapAccount(account);
     }
 
     public async Task<TransactionResponse> Deposit(int accountId, int userId, DepositRequest request)
@@ -177,21 +156,26 @@ public class AccountService
             .FirstOrDefaultAsync(a => a.Id == accountId && a.UserId == userId)
             ?? throw new InvalidOperationException("Account not found");
 
-        return await _context.Transactions
+        var transactions = await _context.Transactions
             .Where(t => t.AccountId == accountId)
             .OrderByDescending(t => t.CreatedAt)
-            .Select(t => new TransactionResponse
-            {
-                Id = t.Id,
-                Type = t.Type.ToString(),
-                Amount = t.Amount,
-                BalanceBefore = t.BalanceBefore,
-                BalanceAfter = t.BalanceAfter,
-                Description = t.Description,
-                TargetAccountId = t.TargetAccountId,
-                CreatedAt = t.CreatedAt
-            })
             .ToListAsync();
+
+        return transactions.Select(MapTransaction).ToList();
+    }
+
+    private static AccountResponse MapAccount(Account a)
+    {
+        return new AccountResponse
+        {
+            Id = a.Id,
+            AccountNumber = a.AccountNumber,
+            AccountType = a.AccountType.ToString(),
+            Balance = a.Balance,
+            IsActive = a.IsActive,
+            UserId = a.UserId,
+            CreatedAt = a.CreatedAt
+        };
     }
 
     private static TransactionResponse MapTransaction(Transaction t)

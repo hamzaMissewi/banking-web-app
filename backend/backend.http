@@ -70,3 +70,38 @@ Authorization: Bearer TOKEN
 ### Get transactions for account
 GET {{backend_HostAddress}}/api/accounts/1/transactions
 Authorization: Bearer TOKEN
+
+### --- Admin endpoints (use admin TOKEN) ---
+
+### Admin dashboard
+GET {{backend_HostAddress}}/api/admin/dashboard
+Authorization: Bearer ADMIN_TOKEN
+
+### List all users
+GET {{backend_HostAddress}}/api/admin/users
+Authorization: Bearer ADMIN_TOKEN
+
+### Get user by id
+GET {{backend_HostAddress}}/api/admin/users/1
+Authorization: Bearer ADMIN_TOKEN
+
+### Promote user to admin
+POST {{backend_HostAddress}}/api/admin/users/1/promote
+Authorization: Bearer ADMIN_TOKEN
+
+### List all accounts
+GET {{backend_HostAddress}}/api/admin/accounts
+Authorization: Bearer ADMIN_TOKEN
+
+### Update account status (freeze/activate)
+PUT {{backend_HostAddress}}/api/admin/accounts/1/status
+Content-Type: application/json
+Authorization: Bearer ADMIN_TOKEN
+
+{
+  "isActive": false
+}
+
+### List all transactions (last 100)
+GET {{backend_HostAddress}}/api/admin/transactions
+Authorization: Bearer ADMIN_TOKEN

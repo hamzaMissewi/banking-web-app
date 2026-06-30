@@ -9,10 +9,11 @@ public class Account
     [Required, MaxLength(20)]
     public string AccountNumber { get; set; } = string.Empty;
 
-    [MaxLength(20)]
-    public string AccountType { get; set; } = "Checking";
+    public AccountType AccountType { get; set; } = AccountType.Checking;
 
-    public decimal Balance { get; set; } = 0;
+    public decimal Balance { get; set; }
+
+    public bool IsActive { get; set; } = true;
 
     public int UserId { get; set; }
     public User User { get; set; } = null!;

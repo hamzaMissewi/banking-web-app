@@ -4,7 +4,6 @@ namespace backend.DTOs;
 
 public class CreateAccountRequest
 {
-    [MaxLength(20)]
     public string AccountType { get; set; } = "Checking";
 }
 
@@ -14,6 +13,8 @@ public class AccountResponse
     public string AccountNumber { get; set; } = string.Empty;
     public string AccountType { get; set; } = string.Empty;
     public decimal Balance { get; set; }
+    public bool IsActive { get; set; }
+    public int UserId { get; set; }
     public DateTime CreatedAt { get; set; }
 }
 

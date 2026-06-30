@@ -40,8 +40,7 @@ public class AuthService
         var account = new Account
         {
             AccountNumber = await GenerateAccountNumber(),
-            AccountType = "Checking",
-            Balance = 0,
+            AccountType = Models.AccountType.Checking,
             User = user
         };
 
@@ -53,7 +52,8 @@ public class AuthService
             Token = GenerateJwt(user),
             UserId = user.Id,
             Username = user.Username,
-            Email = user.Email
+            Email = user.Email,
+            Role = user.Role
         };
     }
 
@@ -61,6 +61,9 @@ public class AuthService
     {
         var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == request.Username)
             ?? throw new InvalidOperationException("Invalid credentials");
+
+        if (!user.IsActive)
+            throw new InvalidOperationException("Account is deactivated");
 
         if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
             throw new InvalidOperationException("Invalid credentials");
@@ -70,7 +73,8 @@ public class AuthService
             Token = GenerateJwt(user),
             UserId = user.Id,
             Username = user.Username,
-            Email = user.Email
+            Email = user.Email,
+            Role = user.Role
         };
     }
 
@@ -84,7 +88,8 @@ public class AuthService
         {
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new Claim(ClaimTypes.Name, user.Username),
-            new Claim(ClaimTypes.Email, user.Email)
+            new Claim(ClaimTypes.Email, user.Email),
+            new Claim(ClaimTypes.Role, user.Role)
         };
 
         var token = new JwtSecurityToken(

@@ -14,6 +14,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<AccountService>();
+builder.Services.AddScoped<AdminService>();
 
 var jwtKey = builder.Configuration["Jwt:Key"]!;
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
