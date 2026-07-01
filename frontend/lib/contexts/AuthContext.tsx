@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, ReactNode } from "react";
 import { authApi, AuthResponse } from "@/lib/api";
 
 interface AuthContextType {
@@ -14,20 +14,25 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthResponse | null>(null);
-  const [token, setToken] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+function getStoredUser(): AuthResponse | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const data = localStorage.getItem("user");
+    return data ? JSON.parse(data) : null;
+  } catch {
+    return null;
+  }
+}
 
-  useEffect(() => {
-    const stored = localStorage.getItem("token");
-    const userData = localStorage.getItem("user");
-    if (stored && userData) {
-      setToken(stored);
-      setUser(JSON.parse(userData));
-    }
-    setLoading(false);
-  }, []);
+function getStoredToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem("token");
+}
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<AuthResponse | null>(getStoredUser);
+  const [token, setToken] = useState<string | null>(getStoredToken);
+  const [loading] = useState(false);
 
   const login = async (username: string, password: string) => {
     const res = await authApi.login(username, password);

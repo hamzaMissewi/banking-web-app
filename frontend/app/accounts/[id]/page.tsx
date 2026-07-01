@@ -20,25 +20,41 @@ export default function AccountDetailPage() {
   const [desc, setDesc] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
 
-  const fetchData = async () => {
-    try {
-      const [acc, txs] = await Promise.all([
-        accountsApi.get(accountId),
-        accountsApi.getTransactions(accountId),
-      ]);
-      setAccount(acc);
-      setTransactions(txs);
-    } catch {
-      router.push("/accounts");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    if (!authLoading && !user) router.push("/login");
-    if (user && !isNaN(accountId)) fetchData();
+    if (authLoading || !user || isNaN(accountId)) return;
+
+    let cancelled = false;
+
+    Promise.all([
+      accountsApi.get(accountId),
+      accountsApi.getTransactions(accountId),
+    ])
+      .then(([acc, txs]) => {
+        if (cancelled) return;
+        setAccount(acc);
+        setTransactions(txs);
+        setLoading(false);
+      })
+      .catch(() => {
+        if (!cancelled) router.push("/accounts");
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [user, authLoading, accountId, router]);
+
+  const fetchData = () => {
+    Promise.all([
+      accountsApi.get(accountId),
+      accountsApi.getTransactions(accountId),
+    ])
+      .then(([acc, txs]) => {
+        setAccount(acc);
+        setTransactions(txs);
+      })
+      .catch(() => router.push("/accounts"));
+  };
 
   const handleDeposit = async () => {
     setActionLoading(true);
