@@ -30,7 +30,7 @@ export default function AccountsPage() {
       await accountsApi.create(accountType);
       setShowCreate(false);
       fetchAccounts();
-    } catch (err) {
+    } catch (err: unknown) {
       alert(err instanceof Error ? err.message : "Failed to create account");
     } finally {
       setCreating(false);

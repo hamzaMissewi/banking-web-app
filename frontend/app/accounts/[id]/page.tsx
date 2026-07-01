@@ -48,7 +48,7 @@ export default function AccountDetailPage() {
       setAmount("");
       setDesc("");
       fetchData();
-    } catch (err) {
+    } catch (err: unknown) {
       alert(err instanceof Error ? err.message : "Deposit failed");
     } finally {
       setActionLoading(false);
@@ -63,7 +63,7 @@ export default function AccountDetailPage() {
       setAmount("");
       setDesc("");
       fetchData();
-    } catch (err) {
+    } catch (err: unknown) {
       alert(err instanceof Error ? err.message : "Withdrawal failed");
     } finally {
       setActionLoading(false);
