@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using backend.Data;
 using backend.DTOs;
+using backend.Helpers;
 using backend.Models;
 
 namespace backend.Services;
@@ -20,24 +21,22 @@ public class AccountService
             .Where(a => a.UserId == userId)
             .ToListAsync();
 
-        return accounts.Select(MapAccount).ToList();
+        return accounts.Select(MappingHelper.ToResponse).ToList();
     }
 
     public async Task<AccountResponse> CreateAccount(int userId, CreateAccountRequest request)
     {
         var account = new Account
         {
-            AccountNumber = await GenerateAccountNumber(),
-            AccountType = Enum.TryParse<Models.AccountType>(request.AccountType, true, out var parsed)
-                ? parsed
-                : Models.AccountType.Checking,
+            AccountNumber = await AccountNumberGenerator.GenerateUnique(_context),
+            AccountType = MappingHelper.ParseAccountType(request.AccountType),
             UserId = userId
         };
 
         _context.Accounts.Add(account);
         await _context.SaveChangesAsync();
 
-        return MapAccount(account);
+        return MappingHelper.ToResponse(account);
     }
 
     public async Task<AccountResponse?> GetAccount(int accountId, int userId)
@@ -45,7 +44,7 @@ public class AccountService
         var account = await _context.Accounts
             .FirstOrDefaultAsync(a => a.Id == accountId && a.UserId == userId);
 
-        return account == null ? null : MapAccount(account);
+        return account == null ? null : MappingHelper.ToResponse(account);
     }
 
     public async Task<AccountResponse> UpdateAccount(int accountId, int userId, UpdateAccountRequest request)
@@ -54,12 +53,10 @@ public class AccountService
             .FirstOrDefaultAsync(a => a.Id == accountId && a.UserId == userId)
             ?? throw new InvalidOperationException("Account not found");
 
-        account.AccountType = Enum.TryParse<Models.AccountType>(request.AccountType, true, out var parsed)
-            ? parsed
-            : Models.AccountType.Checking;
+        account.AccountType = MappingHelper.ParseAccountType(request.AccountType);
 
         await _context.SaveChangesAsync();
-        return MapAccount(account);
+        return MappingHelper.ToResponse(account);
     }
 
     public async Task<AccountResponse> CloseAccount(int accountId, int userId)
@@ -77,7 +74,7 @@ public class AccountService
         account.IsActive = false;
         await _context.SaveChangesAsync();
 
-        return MapAccount(account);
+        return MappingHelper.ToResponse(account);
     }
 
     public async Task<TransactionResponse> Deposit(int accountId, int userId, DepositRequest request)
@@ -105,7 +102,7 @@ public class AccountService
         _context.Transactions.Add(transaction);
         await _context.SaveChangesAsync();
 
-        return MapTransaction(transaction);
+        return MappingHelper.ToResponse(transaction);
     }
 
     public async Task<TransactionResponse> Withdraw(int accountId, int userId, WithdrawRequest request)
@@ -136,11 +133,13 @@ public class AccountService
         _context.Transactions.Add(transaction);
         await _context.SaveChangesAsync();
 
-        return MapTransaction(transaction);
+        return MappingHelper.ToResponse(transaction);
     }
 
     public async Task<TransactionResponse> Transfer(int accountId, int userId, TransferRequest request)
     {
+        await using var transaction = await _context.Database.BeginTransactionAsync();
+
         var sourceAccount = await _context.Accounts
             .FirstOrDefaultAsync(a => a.Id == accountId && a.UserId == userId)
             ?? throw new InvalidOperationException("Source account not found");
@@ -190,8 +189,9 @@ public class AccountService
 
         _context.Transactions.AddRange(sourceTransaction, targetTransaction);
         await _context.SaveChangesAsync();
+        await transaction.CommitAsync();
 
-        return MapTransaction(sourceTransaction);
+        return MappingHelper.ToResponse(sourceTransaction);
     }
 
     public async Task<List<TransactionResponse>> GetTransactions(int accountId, int userId)
@@ -205,50 +205,6 @@ public class AccountService
             .OrderByDescending(t => t.CreatedAt)
             .ToListAsync();
 
-        return transactions.Select(MapTransaction).ToList();
-    }
-
-    private static AccountResponse MapAccount(Account a)
-    {
-        return new AccountResponse
-        {
-            Id = a.Id,
-            AccountNumber = a.AccountNumber,
-            AccountType = a.AccountType.ToString(),
-            Balance = a.Balance,
-            IsActive = a.IsActive,
-            UserId = a.UserId,
-            CreatedAt = a.CreatedAt
-        };
-    }
-
-    private static TransactionResponse MapTransaction(Transaction t)
-    {
-        return new TransactionResponse
-        {
-            Id = t.Id,
-            Type = t.Type.ToString(),
-            Amount = t.Amount,
-            BalanceBefore = t.BalanceBefore,
-            BalanceAfter = t.BalanceAfter,
-            Description = t.Description,
-            TargetAccountId = t.TargetAccountId,
-            CreatedAt = t.CreatedAt
-        };
-    }
-
-    private async Task<string> GenerateAccountNumber()
-    {
-        var random = Random.Shared;
-        var digits = new char[10];
-        for (int attempt = 0; attempt < 10; attempt++)
-        {
-            for (int i = 0; i < 10; i++)
-                digits[i] = (char)('0' + random.Next(0, 10));
-            var number = new string(digits);
-            if (!await _context.Accounts.AnyAsync(a => a.AccountNumber == number))
-                return number;
-        }
-        throw new InvalidOperationException("Failed to generate a unique account number");
+        return transactions.Select(MappingHelper.ToResponse).ToList();
     }
 }

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using backend.Data;
 using backend.DTOs;
+using backend.Helpers;
 using backend.Models;
 
 namespace backend.Services;
@@ -21,7 +22,7 @@ public class AdminService
             .OrderByDescending(u => u.CreatedAt)
             .ToListAsync();
 
-        return users.Select(MapUser).ToList();
+        return users.Select(MappingHelper.ToResponse).ToList();
     }
 
     public async Task<UserResponse?> GetUser(int userId)
@@ -30,7 +31,7 @@ public class AdminService
             .Include(u => u.Accounts)
             .FirstOrDefaultAsync(u => u.Id == userId);
 
-        return user == null ? null : MapUser(user);
+        return user == null ? null : MappingHelper.ToResponse(user);
     }
 
     public async Task<UserResponse> ToggleUserStatus(int userId, ToggleUserStatusRequest request)
@@ -43,7 +44,7 @@ public class AdminService
         user.IsActive = request.IsActive;
         await _context.SaveChangesAsync();
 
-        return MapUser(user);
+        return MappingHelper.ToResponse(user);
     }
 
     public async Task<List<AccountResponse>> GetAccounts()
@@ -52,7 +53,7 @@ public class AdminService
             .OrderByDescending(a => a.CreatedAt)
             .ToListAsync();
 
-        return accounts.Select(MapAccount).ToList();
+        return accounts.Select(MappingHelper.ToResponse).ToList();
     }
 
     public async Task<AccountResponse> UpdateAccountStatus(int accountId, UpdateAccountStatusRequest request)
@@ -64,7 +65,7 @@ public class AdminService
         account.IsActive = request.IsActive;
         await _context.SaveChangesAsync();
 
-        return MapAccount(account);
+        return MappingHelper.ToResponse(account);
     }
 
     public async Task<DashboardResponse> GetDashboard()
@@ -99,7 +100,7 @@ public class AdminService
         user.Role = "Admin";
         await _context.SaveChangesAsync();
 
-        return MapUser(user);
+        return MappingHelper.ToResponse(user);
     }
 
     public async Task<List<TransactionResponse>> GetTransactions()
@@ -109,7 +110,7 @@ public class AdminService
             .Take(100)
             .ToListAsync();
 
-        return transactions.Select(MapTransaction).ToList();
+        return transactions.Select(MappingHelper.ToResponse).ToList();
     }
 
     public async Task<List<TransactionResponse>> GetAccountTransactions(int accountId)
@@ -122,49 +123,6 @@ public class AdminService
             .OrderByDescending(t => t.CreatedAt)
             .ToListAsync();
 
-        return transactions.Select(MapTransaction).ToList();
-    }
-
-    private static UserResponse MapUser(User u)
-    {
-        return new UserResponse
-        {
-            Id = u.Id,
-            Username = u.Username,
-            Email = u.Email,
-            Role = u.Role,
-            IsActive = u.IsActive,
-            CreatedAt = u.CreatedAt,
-            AccountCount = u.Accounts.Count
-        };
-    }
-
-    private static AccountResponse MapAccount(Account a)
-    {
-        return new AccountResponse
-        {
-            Id = a.Id,
-            AccountNumber = a.AccountNumber,
-            AccountType = a.AccountType.ToString(),
-            Balance = a.Balance,
-            IsActive = a.IsActive,
-            UserId = a.UserId,
-            CreatedAt = a.CreatedAt
-        };
-    }
-
-    private static TransactionResponse MapTransaction(Transaction t)
-    {
-        return new TransactionResponse
-        {
-            Id = t.Id,
-            Type = t.Type.ToString(),
-            Amount = t.Amount,
-            BalanceBefore = t.BalanceBefore,
-            BalanceAfter = t.BalanceAfter,
-            Description = t.Description,
-            TargetAccountId = t.TargetAccountId,
-            CreatedAt = t.CreatedAt
-        };
+        return transactions.Select(MappingHelper.ToResponse).ToList();
     }
 }

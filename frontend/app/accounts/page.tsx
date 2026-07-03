@@ -81,7 +81,7 @@ export default function AccountsPage() {
               >
                 <option>Checking</option>
                 <option>Savings</option>
-                <option>Business</option>
+                <option>MoneyMarket</option>
               </select>
             </div>
             <div className="flex gap-3">

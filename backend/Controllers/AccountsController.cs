@@ -32,7 +32,7 @@ public class AccountsController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> CreateAccount(CreateAccountRequest request)
+    public async Task<IActionResult> CreateAccount([FromBody] CreateAccountRequest request)
     {
         var account = await _accountService.CreateAccount(GetUserId(), request);
         return CreatedAtAction(nameof(GetAccounts), new { id = account.Id }, account);

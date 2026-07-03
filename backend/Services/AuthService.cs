@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using backend.Data;
 using backend.DTOs;
+using backend.Helpers;
 using backend.Models;
 
 namespace backend.Services;
@@ -39,7 +40,7 @@ public class AuthService
 
         var account = new Account
         {
-            AccountNumber = await GenerateAccountNumber(),
+            AccountNumber = await AccountNumberGenerator.GenerateUnique(_context),
             AccountType = Models.AccountType.Checking,
             User = user
         };
@@ -102,18 +103,4 @@ public class AuthService
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
-    private async Task<string> GenerateAccountNumber()
-    {
-        var random = Random.Shared;
-        var digits = new char[10];
-        for (int attempt = 0; attempt < 10; attempt++)
-        {
-            for (int i = 0; i < 10; i++)
-                digits[i] = (char)('0' + random.Next(0, 10));
-            var number = new string(digits);
-            if (!await _context.Accounts.AnyAsync(a => a.AccountNumber == number))
-                return number;
-        }
-        throw new InvalidOperationException("Failed to generate a unique account number");
-    }
 }

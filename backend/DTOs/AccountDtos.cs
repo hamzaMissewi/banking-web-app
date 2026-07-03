@@ -4,6 +4,7 @@ namespace backend.DTOs;
 
 public class CreateAccountRequest
 {
+    [RegularExpression("^(Checking|Savings|MoneyMarket)$", ErrorMessage = "AccountType must be Checking, Savings, or MoneyMarket")]
     public string AccountType { get; set; } = "Checking";
 }
 
@@ -50,6 +51,7 @@ public class TransferRequest
 
 public class UpdateAccountRequest
 {
+    [RegularExpression("^(Checking|Savings|MoneyMarket)$", ErrorMessage = "AccountType must be Checking, Savings, or MoneyMarket")]
     public string AccountType { get; set; } = "Checking";
 }
 
