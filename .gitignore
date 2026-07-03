@@ -23,6 +23,9 @@
 # testing
 /coverage
 
+/backend/obj
+/backend/bin
+
 # next.js
 /.next/
 /out/
