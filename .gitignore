@@ -12,8 +12,13 @@
 
 **/*test*
 *.ignore
+*.gitignore
 **/*copy*
 **/*backup*
+
+**/*.md
+
+!**/README.md
 
 # testing
 /coverage
